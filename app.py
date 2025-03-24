@@ -535,3 +535,6 @@ app.register_blueprint(main)  # ✅ Register it
 
 if __name__ == '__main__':
     app.run(debug=True)
+@app.route("/ping")
+def ping():
+    return "pong", 200
