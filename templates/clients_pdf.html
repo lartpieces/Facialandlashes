@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Clients List PDF</title>
+    <style>
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            padding: 20px;
+            background-color: #fff0f5;
+            color: #000;
+        }
+        h2 {
+            text-align: center;
+            color: #d63384;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f8c3d8;
+            color: #6a0d45;
+        }
+        .loyal-star {
+            color: gold;
+        }
+        .notes {
+            font-style: italic;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h2>✨ Clients List Report ✨</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Last Visit</th>
+                <th>Total Visits</th>
+                <th>Technician</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for client in clients %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>
+                    {{ client.name }}
+                    {% if client.loyal %}<span class="loyal-star"> ⭐</span>{% endif %}
+                </td>
+                <td>{{ client.phone }}</td>
+                <td>{{ client.last_visit or 'N/A' }}</td>
+                <td>{{ client.visit_count }}</td>
+                <td>{{ client.technician or 'N/A' }}</td>
+                <td class="notes">{{ client.notes or '' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

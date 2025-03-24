@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Client</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #fff0f5;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        h2 {
+            color: #d63384;
+        }
+        .btn-salon {
+            background-color: #f8c3d8;
+            color: #6a0d45;
+            border: none;
+        }
+        .btn-salon:hover {
+            background-color: #f4a9c7;
+        }
+        .form-label {
+            color: #6a0d45;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>➕ Add New Client</h2>
+            <a href="{{ url_for('clients_list') }}" class="btn btn-outline-dark">← Back to Clients</a>
+        </div>
+
+        <form method="POST">
+            <div class="mb-3">
+                <label for="name" class="form-label">Client Name</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label for="phone" class="form-label">Phone Number</label>
+                <input type="text" class="form-control" id="phone" name="phone" required>
+            </div>
+            <div class="mb-3">
+                <label for="notes" class="form-label">Notes / Tags</label>
+                <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-salon">💾 Save Client</button>
+        </form>
+    </div>
+</body>
+</html>

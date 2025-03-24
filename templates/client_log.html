@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Client Visit Log</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #fff0f5;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        h2 {
+            color: #d63384;
+        }
+        .btn-salon {
+            background-color: #f8c3d8;
+            color: #6a0d45;
+            border: none;
+        }
+        .btn-salon:hover {
+            background-color: #f4a9c7;
+        }
+        .autocomplete-box {
+            border: 1px solid #ccc;
+            max-height: 200px;
+            overflow-y: auto;
+            position: absolute;
+            background-color: white;
+            z-index: 10;
+            width: 100%;
+        }
+        .autocomplete-box div {
+            padding: 8px;
+            cursor: pointer;
+        }
+        .autocomplete-box div:hover {
+            background-color: #f8c3d8;
+        }
+        table {
+            margin-top: 20px;
+        }
+        th {
+            background-color: #f8c3d8;
+            color: #6a0d45;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body class="p-4">
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>📒 Clients Visit Log</h2>
+        <a href="/" class="btn btn-outline-dark">🏠 Home</a>
+    </div>
+
+    <form id="logSearchForm" method="get" action="" class="mb-4 position-relative">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-6 position-relative">
+                <input id="searchInput" type="text" name="client" class="form-control" placeholder="Search client name or phone" autocomplete="off">
+                <div id="autocomplete" class="autocomplete-box"></div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-salon w-100">🔍 Search</button>
+            </div>
+        </div>
+    </form>
+
+    <div id="results">
+        <table class="table table-bordered table-striped d-none">
+            <thead>
+                <tr>
+                    <th>Visit Date</th>
+                    <th>Client Name</th>
+                    <th>Phone</th>
+                    <th>Technician</th>
+                    <th>Category</th>
+                    <th>Service</th>
+                    <th>Invoice</th>
+                    <th>Discount (%)</th>
+                    <th>Net Invoice</th>
+                    <th>Tips</th>
+                    <th>Payment Method</th>
+                </tr>
+            </thead>
+            <tbody id="logTableBody">
+                <!-- Filled dynamically -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    let clients = [];
+    let selectedClientId = null;
+
+    $.getJSON("/api/clients", function(data) {
+        clients = data;
+    });
+
+    $('#logSearchForm').on('submit', function(e) {
+        e.preventDefault();
+        const input = $('#searchInput').val().toLowerCase().trim();
+        const matchedClient = clients.find(c => c.name.toLowerCase() === input || c.phone === input);
+
+        if (matchedClient) {
+            selectedClientId = matchedClient.id;
+            fetchClientLog(selectedClientId);
+        } else if (selectedClientId) {
+            fetchClientLog(selectedClientId);
+        } else {
+            alert('Client not found. Please select from the suggestions.');
+        }
+    });
+
+    $('#searchInput').on('input', function() {
+        const query = $(this).val().toLowerCase();
+        const matches = clients.filter(c => c.name.toLowerCase().includes(query) || c.phone.includes(query));
+        const box = $('#autocomplete');
+        box.empty();
+        if (query && matches.length > 0) {
+            matches.slice(0, 10).forEach(client => {
+                box.append(`<div data-id="${client.id}" data-name="${client.name}" data-phone="${client.phone}">${client.name} - ${client.phone}</div>`);
+            });
+            box.show();
+        } else {
+            box.hide();
+        }
+    });
+
+    $(document).on('click', '#autocomplete div', function() {
+        selectedClientId = $(this).data('id');
+        const clientName = $(this).data('name');
+        $('#searchInput').val(clientName);
+        $('#autocomplete').hide();
+        fetchClientLog(selectedClientId);
+    });
+
+    function fetchClientLog(clientId) {
+        $.getJSON(`/api/client-log/${clientId}`, function(data) {
+            const tbody = $('#logTableBody');
+            tbody.empty();
+            if (data.length > 0) {
+                $('#results table').removeClass('d-none');
+                data.forEach(row => {
+                    tbody.append(`
+                        <tr>
+                            <td>${row.visit_date}</td>
+                            <td>${row.client_name}</td>
+                            <td>${row.phone}</td>
+                            <td>${row.technician}</td>
+                            <td>${row.category}</td>
+                            <td>${row.service}</td>
+                            <td>${row.invoice}</td>
+                            <td>${row.discount}</td>
+                            <td>${row.net_invoice}</td>
+                            <td>${row.tips}</td>
+                            <td>${row.payment_method || '-'}</td>
+                        </tr>`);
+                });
+            } else {
+                $('#results table').addClass('d-none');
+                alert('No visit records found for this client.');
+            }
+        });
+    }
+
+    $(document).click(function(e) {
+        if (!$(e.target).closest('#searchInput').length) {
+            $('#autocomplete').hide();
+        }
+    });
+});
+</script>
+</body>
+</html>

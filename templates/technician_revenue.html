@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Technician Revenue Summary</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #fff0f5;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        h2 {
+            color: #d63384;
+        }
+        .table th {
+            background-color: #f8c3d8;
+            color: #6a0d45;
+        }
+        .btn-salon {
+            background-color: #f8c3d8;
+            color: #6a0d45;
+            border: none;
+        }
+        .btn-salon:hover {
+            background-color: #f4a9c7;
+        }
+    </style>
+    <script>
+        function recalculateTotals() {
+            let rows = document.querySelectorAll("tbody tr");
+            let total_invoice = 0, total_net = 0, total_tips = 0, total_salary = 0, total_combined = 0;
+
+            rows.forEach(row => {
+                let net = parseFloat(row.querySelector(".net-invoice").textContent) || 0;
+                let tips = parseFloat(row.querySelector(".tips").textContent) || 0;
+                let shareInput = row.querySelector("input[type='number']");
+                let share = parseFloat(shareInput.value) || 0;
+                let invoice = parseFloat(row.querySelector(".invoice").textContent) || 0;
+
+                let salary = (net * share / 100).toFixed(2);
+                let combined = (parseFloat(salary) + tips).toFixed(2);
+
+                row.querySelector(".salary").textContent = salary;
+                row.querySelector(".combined").textContent = combined;
+
+                total_invoice += invoice;
+                total_net += net;
+                total_tips += tips;
+                total_salary += parseFloat(salary);
+                total_combined += parseFloat(combined);
+            });
+
+            document.getElementById("total_invoice").textContent = total_invoice.toFixed(2);
+            document.getElementById("total_net").textContent = total_net.toFixed(2);
+            document.getElementById("total_tips").textContent = total_tips.toFixed(2);
+            document.getElementById("total_salary").textContent = total_salary.toFixed(2);
+            document.getElementById("total_combined").textContent = total_combined.toFixed(2);
+        }
+    </script>
+</head>
+<body class="p-4">
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>💼 Technician Revenue Summary</h2>
+        <a href="{{ url_for('main.revenue_report') }}" class="btn btn-outline-dark">🏠 Back</a>
+    </div>
+
+    <!-- Date Filters -->
+    <form method="GET" class="row g-3 mb-4">
+        <div class="col-md-3">
+            <label for="start_date" class="form-label">Start Date</label>
+            <input type="date" name="start_date" id="start_date" value="{{ start_date }}" class="form-control">
+        </div>
+        <div class="col-md-3">
+            <label for="end_date" class="form-label">End Date</label>
+            <input type="date" name="end_date" id="end_date" value="{{ end_date }}" class="form-control">
+        </div>
+        <div class="col-md-3 align-self-end">
+            <button type="submit" class="btn btn-salon w-100">🔍 Filter</button>
+        </div>
+    </form>
+
+    <!-- Revenue Table -->
+    <form method="POST" action="{{ url_for('main.export_technician_revenue') }}">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Technician</th>
+                    <th>% Share</th>
+                    <th>Invoice</th>
+                    <th>Net Invoice</th>
+                    <th>Tips</th>
+                    <th>Salary</th>
+                    <th>Total Salary</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in technician_data %}
+                    {% set salary = (row.net_invoice * (row.share / 100)) | round(2) %}
+                    {% set combined = salary + row.tips %}
+                    <tr>
+                        <td>{{ row.name }}</td>
+                        <td><input type="number" name="share_{{ row.name }}" value="{{ row.share }}" class="form-control" step="0.01"></td>
+                        <td class="invoice">{{ row.invoice }}</td>
+                        <td class="net-invoice">{{ row.net_invoice }}</td>
+                        <td class="tips">{{ row.tips }}</td>
+                        <td class="salary">{{ salary }}</td>
+                        <td class="combined">{{ combined }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="fw-bold">
+                    <td colspan="2">Total</td>
+                    <td id="total_invoice">0</td>
+                    <td id="total_net">0</td>
+                    <td id="total_tips">0</td>
+                    <td id="total_salary">0</td>
+                    <td id="total_combined">0</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-warning" onclick="recalculateTotals()">🔁 Recalculate Totals</button>
+            <div class="d-flex gap-2">
+                <button type="submit" name="format" value="excel" class="btn btn-primary">📤 Export Excel</button>
+                <button type="submit" name="format" value="pdf" class="btn btn-secondary">🖨 Print PDF</button>
+            </div>
+        </div>
+    </form>
+</div>
+<script>
+    window.onload = recalculateTotals;
+</script>
+</body>
+</html>

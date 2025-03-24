@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Follow-Up Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f9e6ef;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        h2 {
+            color: #d63384;
+            font-weight: bold;
+        }
+        table {
+            background-color: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(214, 51, 132, 0.2);
+        }
+        th {
+            background-color: #f8c3d8;
+            color: #6a0d45;
+        }
+        .btn-salon {
+            background-color: #f8c3d8;
+            color: #6a0d45;
+            border: none;
+            font-weight: 500;
+        }
+        .btn-salon:hover {
+            background-color: #f4a9c7;
+        }
+    </style>
+</head>
+<body class="p-5">
+<div class="container">
+<div class="mb-3">
+    <a href="{{ url_for('main.home') }}" class="btn btn-secondary">🏠 Back to Home</a>
+</div>
+
+    <h2 class="mb-4">📆 Due Follow-Ups This Week</h2>
+    <p class="text-muted">Clients whose last visit was 3 weeks ago (Week of {{ week.strftime('%b %d, %Y') }})</p>
+
+    <form method="GET" class="mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="technician" class="form-label">Filter by Technician</label>
+                <select name="technician" id="technician" class="form-select">
+                    <option value="">All</option>
+                    {% for tech in technicians %}
+                        <option value="{{ tech }}" {% if selected_tech == tech %}selected{% endif %}>{{ tech }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary">🔍 Filter</button>
+            </div>
+        </div>
+    </form>
+
+    {% if clients %}
+    <form method="POST" action="{{ url_for('main.mark_followed_up_bulk') }}">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>Client</th>
+                    <th>Phone</th>
+                    <th>Technician</th>
+                    <th>Last Service</th>
+                    <th>Followed Up?</th>
+                    <th>Note</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in clients %}
+                <tr>
+                    <td>{{ c.name }}</td>
+                    <td><a href="tel:{{ c.phone }}">{{ c.phone }}</a></td>
+                    <td>{{ c.technician or '—' }}</td>
+                    <td>{{ c.service or '—' }}</td>
+                    <td>
+                        {% if c.followed_up_at %}
+                            ✅ {{ c.followed_up_at[:10] }}
+                        {% else %}
+                            ❌ Not Yet
+                        {% endif %}
+                    </td>
+                    <td>
+                        <input type="text" name="note_{{ c.id }}" value="{{ c.note or '' }}" class="form-control form-control-sm">
+                    </td>
+                    <td>
+                        {% if c.followed_up_at %}
+                        <button type="submit" name="follow_up_id" value="{{ c.id }}" class="btn btn-outline-danger btn-sm" onclick="document.getElementById('action').value='unmark'">❌ Unmark</button>
+                        {% else %}
+                        <button type="submit" name="follow_up_id" value="{{ c.id }}" class="btn btn-salon btn-sm" onclick="document.getElementById('action').value='mark'">✅ Mark</button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <input type="hidden" name="action" id="action" value="">
+    </form>
+    {% else %}
+        <p class="alert alert-info">No clients found due for follow-up this week.</p>
+    {% endif %}
+</div>
+</body>
+</html>

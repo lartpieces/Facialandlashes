@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Technicians List</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #fff0f5;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        h2 {
+            color: #d63384;
+        }
+        .btn-salon {
+            background-color: #f8c3d8;
+            color: #6a0d45;
+            border: none;
+        }
+        .btn-salon:hover {
+            background-color: #f4a9c7;
+        }
+        .form-inline input {
+            width: auto;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body class="p-4">
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>👨‍🔧 Technicians</h2>
+        <a href="{{ url_for('main.home') }}" class="btn btn-outline-dark">🏠 Home</a>
+    </div>
+
+    <form action="{{ url_for('main.add_technician') }}" method="POST" class="d-flex gap-2 mb-4">
+        <input type="text" name="name" class="form-control" placeholder="New Technician Name" required>
+        <button type="submit" class="btn btn-salon">➕ Add Technician</button>
+    </form>
+
+    <table class="table table-bordered table-striped">
+        <thead class="table-light">
+            <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tech in technicians %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('main.edit_technician', tech_id=tech.id) }}" class="d-flex gap-2">
+                        <input type="text" name="name" value="{{ tech.name }}" class="form-control" required>
+                        <button type="submit" class="btn btn-sm btn-outline-primary">💾</button>
+                    </form>
+                </td>
+                <td>
+                    <form method="POST" action="{{ url_for('main.delete_technician', tech_id=tech.id) }}" onsubmit="return confirm('Delete this technician?')" style="display:inline-block;">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">❌</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

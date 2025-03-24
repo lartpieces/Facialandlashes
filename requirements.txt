@@ -1,0 +1,5 @@
+Flask
+gunicorn
+pandas
+xhtml2pdf
+jinja

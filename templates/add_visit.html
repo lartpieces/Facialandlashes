@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Add New Visit</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .autocomplete-box {
+            position: absolute;
+            background: white;
+            border: 1px solid #ccc;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+            width: 100%;
+        }
+        .autocomplete-box div {
+            padding: 8px;
+            cursor: pointer;
+        }
+        .autocomplete-box div:hover {
+            background-color: #f8c3d8;
+        }
+        .remove-service {
+            cursor: pointer;
+            color: red;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body class="p-4" style="background-color: #fff0f5;">
+<div class="container">
+    <h2 class="text-center text-danger mb-4">➕ Add New Visit</h2>
+    <form method="POST" onsubmit="return confirm('Are you sure you want to save this visit?');">
+        <div class="mb-3 position-relative">
+            <label class="form-label">Client Name</label>
+            <input type="text" name="client" id="clientInput" class="form-control" placeholder="Start typing name or phone..." autocomplete="off" required>
+            <div id="clientAutocomplete" class="autocomplete-box"></div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Visit Date</label>
+            <input type="date" name="visit_date" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Payment Method</label>
+            <select name="payment_method" class="form-select" required>
+                {% for p in payments %}
+                    <option value="{{ p }}">{{ p }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <hr>
+        <h5>Services</h5>
+        <div id="services-container">
+            <div class="service-block border p-3 mb-3">
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <select name="category_0" class="form-select category-select" data-index="0" required>
+                            {% for cat in categories %}<option value="{{ cat }}">{{ cat }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="service_0" class="form-select" required>
+                            {% for s in services %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="technician_0" class="form-select" required>
+                            {% for t in technicians %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-1"><input type="number" name="invoice_0" class="form-control invoice" placeholder="Invoice" step="0.01" required></div>
+                    <div class="col-md-1"><input type="number" name="discount_0" class="form-control discount" placeholder="%" step="0.01" required></div>
+                    <div class="col-md-1"><input type="number" name="net_invoice_0" class="form-control net_invoice" placeholder="Net" step="0.01" readonly></div>
+                    <div class="col-md-1"><input type="number" name="tips_0" class="form-control" placeholder="Tips" step="0.01"></div>
+                    <div class="col-md-1 d-flex align-items-center"><span class="remove-service">❌</span></div>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="btn btn-outline-success mb-3" id="add-service-btn">➕ Add Another Service</button>
+        <br>
+        <button type="submit" class="btn btn-danger">💾 Save Visit</button>
+        <a href="{{ url_for('home') }}" class="btn btn-secondary">🏠 Cancel</a>
+    </form>
+</div>
+
+<script>
+let clients = [];
+let serviceIndex = 1;
+
+$(document).ready(function () {
+    $.getJSON("/api/clients", function (data) {
+        clients = data;
+    });
+
+    $('#clientInput').on('input', function () {
+        const query = $(this).val().toLowerCase();
+        const matches = clients.filter(c => c.name.toLowerCase().includes(query) || c.phone.includes(query));
+        const box = $('#clientAutocomplete');
+        box.empty();
+        if (query && matches.length > 0) {
+            matches.slice(0, 10).forEach(c => {
+                box.append(`<div>${c.name} - ${c.phone}</div>`);
+            });
+            box.show();
+        } else {
+            box.hide();
+        }
+    });
+
+    $(document).on('click', '#clientAutocomplete div', function () {
+        $('#clientInput').val($(this).text().split(' - ')[0]);
+        $('#clientAutocomplete').hide();
+    });
+
+    $(document).click(function (e) {
+        if (!$(e.target).closest('#clientInput').length) {
+            $('#clientAutocomplete').hide();
+        }
+    });
+
+    $('#add-service-btn').click(function () {
+        const originalBlock = $('#services-container .service-block').first();
+        const block = originalBlock.clone();
+
+        block.find('input, select').each(function () {
+            const name = $(this).attr('name');
+            if (name) {
+                const newName = name.replace(/_\d+$/, `_${serviceIndex}`);
+                $(this).attr('name', newName);
+                if ($(this).is('input')) $(this).val('');
+            }
+        });
+
+        block.find('.remove-service').show();
+        $('#services-container').append(block);
+        serviceIndex++;
+    });
+
+    $(document).on('click', '.remove-service', function () {
+        $(this).closest('.service-block').remove();
+    });
+
+    $(document).on('input', '.invoice, .discount', function () {
+        const block = $(this).closest('.service-block');
+        const invoice = parseFloat(block.find('.invoice').val()) || 0;
+        const discount = parseFloat(block.find('.discount').val()) || 0;
+        const net = invoice * (1 - discount / 100);
+        block.find('.net_invoice').val(net.toFixed(2));
+    });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clients List</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #fff0f5;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        h2 {
+            color: #d63384;
+        }
+        .btn-salon {
+            background-color: #f8c3d8;
+            color: #6a0d45;
+            border: none;
+        }
+        .btn-salon:hover {
+            background-color: #f4a9c7;
+        }
+        .autocomplete-box {
+            border: 1px solid #ccc;
+            max-height: 200px;
+            overflow-y: auto;
+            position: absolute;
+            background-color: white;
+            z-index: 10;
+            width: 100%;
+        }
+        .autocomplete-box div {
+            padding: 8px;
+            cursor: pointer;
+        }
+        .autocomplete-box div:hover {
+            background-color: #f8c3d8;
+        }
+        .input-group .form-control {
+            border-right: 0;
+        }
+        .input-group .btn-clear {
+            border-left: 0;
+            background: white;
+            border: 1px solid #ced4da;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body class="p-4">
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <h2 class="mb-0">💇 Clients List</h2>
+            <a href="{{ url_for('add_client') }}" class="btn btn-success btn-sm">➕ Add Client</a>
+        </div>
+        <a href="{{ url_for('home') }}" class="btn btn-outline-dark">🏠 Home</a>
+    </div>
+
+    <form method="get" action="{{ url_for('clients_list') }}" class="row g-3 mb-4 position-relative">
+        <div class="col-md-3 position-relative">
+            <div class="input-group">
+                <input id="searchInput" type="text" name="search" class="form-control" placeholder="Search name or phone" autocomplete="off" value="{{ search }}">
+                <button class="btn btn-clear" type="button" onclick="clearSearch()">❌</button>
+                <button type="submit" class="btn btn-salon">🔍</button>
+            </div>
+            <div id="autocomplete" class="autocomplete-box"></div>
+        </div>
+        <div class="col-md-3">
+            <select name="sort" class="form-select" onchange="this.form.submit()">
+                <option value="name" {% if sort == 'name' %}selected{% endif %}>Sort by Name</option>
+                <option value="last_visit" {% if sort == 'last_visit' %}selected{% endif %}>Sort by Last Visit</option>
+                <option value="visit_count" {% if sort == 'visit_count' %}selected{% endif %}>Sort by Visit Count</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select name="loyalty" class="form-select" onchange="this.form.submit()">
+                <option value="" {% if loyalty == '' %}selected{% endif %}>All Clients</option>
+                <option value="loyal" {% if loyalty == 'loyal' %}selected{% endif %}>⭐ Loyal Clients</option>
+                <option value="nonloyal" {% if loyalty == 'nonloyal' %}selected{% endif %}>👤 Others</option>
+            </select>
+        </div>
+        <div class="col-md-3 text-end">
+            <a href="{{ url_for('export_clients_excel', sort=sort, search=search, loyalty=loyalty) }}" class="btn btn-primary">📄 Excel</a>
+            <button onclick="window.print()" class="btn btn-secondary">🖨 Print</button>
+        </div>
+    </form>
+
+    <table class="table table-bordered table-striped">
+        <thead class="table-light">
+            <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Last Visit</th>
+                <th>Total Visits</th>
+                <th>Technician</th>
+                <th>Notes/Tags</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for client in clients %}
+                <tr>
+                    <td>{{ loop.index + ((page - 1) * 20) }}</td>
+                    <td>
+                        {{ client.name }}
+                        {% if client.loyal %}<span title="Loyal Client">⭐</span>{% endif %}
+                    </td>
+                    <td><a href="tel:{{ client.phone }}">{{ client.phone }}</a></td>
+                    <td>{{ client.last_visit or 'N/A' }}</td>
+                    <td>{{ client.visit_count }}</td>
+                    <td>{{ client.technician or 'N/A' }}</td>
+                    <td>
+                        {% if client.notes %}{{ client.notes }}
+                        {% else %}<span class="text-muted"><em>No notes</em></span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('edit_client', client_id=client.id) }}" class="btn btn-sm btn-outline-primary">✏ Edit</a>
+                        <form action="{{ url_for('delete_client', client_id=client.id) }}" method="POST" style="display:inline-block" onsubmit="return confirm('Are you sure?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">❌ Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if total_pages > 1 %}
+    <nav>
+        <ul class="pagination justify-content-center">
+            {% if page > 1 %}
+                <li class="page-item"><a class="page-link" href="{{ url_for('clients_list', page=1, sort=sort, search=search, loyalty=loyalty) }}">« First</a></li>
+                <li class="page-item"><a class="page-link" href="{{ url_for('clients_list', page=page-1, sort=sort, search=search, loyalty=loyalty) }}">‹ Prev</a></li>
+            {% endif %}
+            {% for p in range(start_page, end_page + 1) %}
+                <li class="page-item {% if page == p %}active{% endif %}"><a class="page-link" href="{{ url_for('clients_list', page=p, sort=sort, search=search, loyalty=loyalty) }}">{{ p }}</a></li>
+            {% endfor %}
+            {% if page < total_pages %}
+                <li class="page-item"><a class="page-link" href="{{ url_for('clients_list', page=page+1, sort=sort, search=search, loyalty=loyalty) }}">Next ›</a></li>
+                <li class="page-item"><a class="page-link" href="{{ url_for('clients_list', page=total_pages, sort=sort, search=search, loyalty=loyalty) }}">Last »</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<script>
+function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    document.querySelector('form').submit();
+}
+
+$(document).ready(function() {
+    let clients = [];
+    $.getJSON("/api/clients", function(data) {
+        clients = data;
+    });
+
+    $('#searchInput').on('input', function() {
+        const query = $(this).val().toLowerCase();
+        const matches = clients.filter(c => c.name.toLowerCase().includes(query) || c.phone.includes(query));
+        const box = $('#autocomplete');
+        box.empty();
+        if (query && matches.length > 0) {
+            matches.slice(0, 10).forEach(client => {
+                box.append(`<div>${client.name} - ${client.phone}</div>`);
+            });
+            box.show();
+        } else {
+            box.hide();
+        }
+    });
+
+    $(document).on('click', '#autocomplete div', function() {
+        $('#searchInput').val($(this).text().split(' - ')[0]);
+        $('#autocomplete').hide();
+    });
+
+    $(document).click(function(e) {
+        if (!$(e.target).closest('#searchInput').length) {
+            $('#autocomplete').hide();
+        }
+    });
+});
+</script>
+</body>
+</html>
